@@ -10,3 +10,9 @@ User login/auth — har user apna alag data dekhe, cross-device sync ho
 Theme/soul — generic Bootstrap dashboard nahi, koi cohesive theme (fantasy/cyberpunk/pixel-art/lofi) with matching language ("Quests" instead of "Tasks" waghera)
 Gamification systems — Streaks (daily consistency), Attributes (task category se specific stat level up, jaise coding se "Intellect"), aur Economy (currency kama ke items/themes unlock karo)
 Non-linear leveling — har next level pe zyada XP chahiye (jaise Level 1→2 = 100 XP, Level 2→3 = 250 XP, etc.)
+
+Zero-tolerance disqualifiers
+
+Private repo, broken live link, sirf localStorage use karna (real backend/DB nahi), console crashes, 
+ya 3 se kam commits — ye sab turant zero de dega. Isliye real database aur clean git history zaroor rakhna.
+
