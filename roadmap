@@ -1,0 +1,12 @@
+Normal to-do list ya habit tracker apps boring lagti hain kyunki result milne mein time lagta hai (gym jao, 2 mahine baad body change dikhegi). 
+Lekin video games mein instant dopamine milta hai — XP, level up, rewards turant. 
+Tumhe ye dono cheezein combine karni hain: real-life tasks ko RPG game jaisa banana — jaise task complete karo to XP milta hai, level up hota hai, 
+coins milte hain jo virtual store mein use ho sakte hain.
+
+Ye sirf ek frontend prototype nahi chalega — poora full-stack app chahiye:
+
+Backend + Database — taaki koi apna XP/stats manually cheat na kar sake (browser console se edit na kar paaye)
+User login/auth — har user apna alag data dekhe, cross-device sync ho
+Theme/soul — generic Bootstrap dashboard nahi, koi cohesive theme (fantasy/cyberpunk/pixel-art/lofi) with matching language ("Quests" instead of "Tasks" waghera)
+Gamification systems — Streaks (daily consistency), Attributes (task category se specific stat level up, jaise coding se "Intellect"), aur Economy (currency kama ke items/themes unlock karo)
+Non-linear leveling — har next level pe zyada XP chahiye (jaise Level 1→2 = 100 XP, Level 2→3 = 250 XP, etc.)
