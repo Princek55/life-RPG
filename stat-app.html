@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STAT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Spectral:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --void:#0a0c10; --panel:#12161c; --panel-2:#181d25; --line:#262d38;
+    --parchment:#e9d9ae; --parchment-2:#dcc790; --ink:#3a2c17;
+    --gold:#cda333; --gold-hi:#f0cf6b; --cyan:#49d3c0; --cyan-dim:#2b6d67;
+    --ember:#e2703a; --text:#ece6d8; --text-dim:#8b93a1; --danger:#e0656d;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--void);color:var(--text);font-family:'Space Grotesk',sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden;}
+  button{font-family:inherit;}
+  #app{max-width:460px;margin:0 auto;min-height:100vh;position:relative;
+    background:radial-gradient(circle at 15% 0%, rgba(73,211,192,0.07), transparent 45%),
+               radial-gradient(circle at 90% 10%, rgba(205,163,51,0.06), transparent 40%), var(--void);
+    padding-bottom:84px;}
+
+  /* ---------- AUTH ---------- */
+  #authScreen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 26px;max-width:460px;margin:0 auto;}
+  .auth-mark{font-family:'Spectral',serif;font-weight:700;font-size:34px;letter-spacing:1px;color:var(--gold-hi);margin-bottom:2px;}
+  .auth-tag{font-size:12px;color:var(--text-dim);margin-bottom:30px;letter-spacing:0.4px;}
+  .auth-card{width:100%;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px;}
+  .auth-tabs{display:flex;gap:6px;margin-bottom:18px;background:var(--panel-2);border-radius:9px;padding:3px;}
+  .auth-tab{flex:1;text-align:center;padding:8px 0;border-radius:7px;font-size:12.5px;font-weight:600;cursor:pointer;color:var(--text-dim);}
+  .auth-tab.active{background:linear-gradient(160deg,var(--gold),#a67f21);color:#241c08;}
+  .field-label{font-size:11px;color:var(--text-dim);margin:12px 0 5px;display:block;}
+  .field-label:first-child{margin-top:0;}
+  .auth-card input{width:100%;background:var(--panel-2);border:1px solid var(--line);border-radius:8px;
+    padding:10px 12px;color:var(--text);font-size:13.5px;outline:none;}
+  .auth-card input:focus{border-color:var(--cyan-dim);}
+  .auth-submit{width:100%;margin-top:18px;padding:11px 0;border:none;border-radius:9px;
+    background:linear-gradient(160deg,var(--cyan),var(--cyan-dim));color:#062a26;font-weight:700;font-size:13.5px;cursor:pointer;}
+  .auth-submit:disabled{opacity:0.55;cursor:default;}
+  .auth-msg{margin-top:12px;font-size:12px;line-height:1.4;padding:9px 11px;border-radius:8px;display:none;}
+  .auth-msg.err{display:block;background:rgba(224,101,109,0.12);color:var(--danger);border:1px solid rgba(224,101,109,0.3);}
+  .auth-msg.ok{display:block;background:rgba(73,211,192,0.1);color:var(--cyan);border:1px solid rgba(73,211,192,0.3);}
+  .auth-links{display:flex;justify-content:flex-end;margin-top:9px;}
+  .auth-link{font-size:11.5px;color:var(--cyan);cursor:pointer;}
+  .auth-link:hover{text-decoration:underline;}
+  .auth-view-title{font-family:'Spectral',serif;font-weight:600;font-size:17px;color:var(--gold-hi);margin-bottom:4px;}
+  .auth-view-sub{font-size:11.5px;color:var(--text-dim);margin-bottom:16px;line-height:1.4;}
+  .auth-loading{display:none;text-align:center;color:var(--text-dim);font-size:12px;margin-top:12px;}
+  .field-row{display:none;}
+  .field-row.show{display:block;}
+
+  /* ---------- HUD ---------- */
+  .hud{padding:14px 16px 12px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--line);
+    position:sticky;top:0;z-index:20;background:rgba(10,12,16,0.92);backdrop-filter:blur(10px);}
+  .avatar-ring{position:relative;width:50px;height:50px;flex-shrink:0;}
+  .avatar-ring svg{transform:rotate(-90deg);width:100%;height:100%;}
+  .avatar-ring .core{position:absolute;inset:6px;border-radius:50%;background:linear-gradient(160deg,#2a3140,#171b22);
+    display:flex;align-items:center;justify-content:center;font-family:'Spectral',serif;font-weight:700;font-size:14px;color:var(--gold-hi);
+    box-shadow:inset 0 0 8px rgba(0,0,0,0.6);}
+  .avatar-ring.frame-ember .core{box-shadow:inset 0 0 8px rgba(0,0,0,0.6), 0 0 10px 2px rgba(226,112,58,0.6);}
+  .avatar-ring.frame-aether .core{box-shadow:inset 0 0 8px rgba(0,0,0,0.6), 0 0 10px 2px rgba(73,211,192,0.6);}
+  .hud-mid{flex:1;min-width:0;}
+  .hud-name{font-weight:600;font-size:14px;letter-spacing:0.2px;display:flex;align-items:center;gap:6px;overflow:hidden;}
+  .hud-name .uname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px;}
+  .hud-tag{font-size:10px;color:var(--gold-hi);border:1px solid rgba(205,163,51,0.4);padding:1px 6px;border-radius:3px;flex-shrink:0;}
+  .xp-track{margin-top:6px;height:6px;border-radius:3px;background:var(--panel-2);overflow:hidden;border:1px solid var(--line);}
+  .xp-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--cyan-dim),var(--cyan));
+    transition:width 0.9s cubic-bezier(.2,.9,.2,1);box-shadow:0 0 8px rgba(73,211,192,0.6);}
+  .xp-label{font-size:10px;color:var(--text-dim);margin-top:3px;}
+  .streak{display:flex;flex-direction:column;align-items:center;gap:1px;flex-shrink:0;}
+  .streak .flame{font-size:19px;filter:drop-shadow(0 0 6px rgba(226,112,58,0.7));}
+  .streak .num{font-size:12.5px;font-weight:700;color:var(--ember);}
+  .streak .cap{font-size:8px;color:var(--text-dim);letter-spacing:0.3px;}
+  .logout-btn{background:none;border:1px solid var(--line);color:var(--text-dim);border-radius:7px;
+    padding:5px 8px;font-size:10.5px;cursor:pointer;flex-shrink:0;}
+
+  .screen{display:none;padding:16px 16px 8px;animation:fadeIn 0.35s ease;}
+  .screen.active{display:block;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+  .section-title{font-family:'Spectral',serif;font-weight:600;font-size:19px;color:var(--text);margin:18px 0 10px;
+    display:flex;align-items:baseline;justify-content:space-between;}
+  .section-title span.sub{font-family:'Space Grotesk';font-size:11px;color:var(--text-dim);font-weight:400;}
+
+  .wheel-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;gap:16px;align-items:center;}
+  .wheel-wrap{position:relative;width:150px;height:150px;flex-shrink:0;}
+  .wheel-wrap svg{width:100%;height:100%;transform:rotate(-90deg);}
+  .wheel-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .wheel-center .big{font-size:26px;font-weight:700;font-family:'Spectral',serif;color:var(--gold-hi);}
+  .wheel-center .lbl{font-size:9.5px;color:var(--text-dim);letter-spacing:0.5px;}
+  .legend{flex:1;display:flex;flex-direction:column;gap:8px;min-width:0;}
+  .legend-item{display:flex;align-items:center;gap:8px;font-size:12px;}
+  .legend-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+  .legend-item .lname{flex:1;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .legend-item .lval{color:var(--text-dim);font-size:11px;}
+
+  .improve-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-top:12px;}
+  .improve-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);}
+  .improve-row:last-child{border-bottom:none;}
+  .improve-row .ic{font-size:16px;width:22px;text-align:center;}
+  .improve-row .txt{flex:1;font-size:12.5px;color:var(--text);}
+  .improve-row .delta{font-size:12px;font-weight:700;color:var(--cyan);}
+
+  .streak-strip{display:flex;gap:6px;margin-top:12px;}
+  .day-chip{flex:1;aspect-ratio:1;border-radius:8px;display:flex;align-items:center;justify-content:center;
+    font-size:10px;color:var(--text-dim);border:1px solid var(--line);background:var(--panel);}
+  .day-chip.done{background:linear-gradient(160deg,var(--ember),#a5461f);color:#fff;font-weight:700;border-color:transparent;
+    box-shadow:0 0 10px rgba(226,112,58,0.45);}
+  .day-chip.today{outline:1.5px solid var(--gold-hi);}
+
+  .book-scene{background:radial-gradient(circle at 50% 0%, #1a2029, #0a0c10 70%);border-radius:16px;padding:22px 16px 18px;border:1px solid var(--line);}
+  .book-tabs{display:flex;gap:8px;margin-bottom:12px;}
+  .book-tab{flex:1;text-align:center;padding:7px 0;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;
+    border:1px solid var(--line);color:var(--text-dim);background:var(--panel-2);}
+  .book-tab.active{background:linear-gradient(160deg,var(--gold),#a67f21);color:#241c08;border-color:transparent;}
+  .page{background:repeating-linear-gradient(var(--parchment) 0px, var(--parchment) 27px, var(--parchment-2) 28px), var(--parchment);
+    border-radius:6px;padding:18px 16px 16px;box-shadow:0 10px 30px rgba(0,0,0,0.5), inset 0 0 40px rgba(120,90,30,0.15);
+    position:relative;min-height:160px;}
+  .page::before{content:"";position:absolute;left:34px;top:0;bottom:0;width:1px;background:rgba(181,72,79,0.35);}
+  .page-title{font-family:'Spectral',serif;font-weight:600;font-size:14px;color:var(--ink);margin:0 0 10px 26px;}
+  .task-line{display:flex;align-items:center;gap:9px;margin:0 0 0 26px;height:27px;}
+  .task-check{width:14px;height:14px;border-radius:3px;border:1.5px solid var(--ink);flex-shrink:0;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;font-size:10px;color:transparent;}
+  .task-check.checked{background:var(--ink);color:var(--parchment);}
+  .task-text{font-family:'Spectral',serif;font-size:14.5px;color:var(--ink);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .task-text.checked{text-decoration:line-through;opacity:0.55;}
+  .task-xp{font-size:10px;color:#7a5a1c;font-weight:600;flex-shrink:0;}
+  .task-del{font-size:12px;color:#9c7a3a;cursor:pointer;flex-shrink:0;padding:0 2px;}
+  .empty-page{font-family:'Spectral',serif;color:#8a7548;font-size:13px;margin-left:26px;font-style:italic;}
+  .quill-input{display:flex;gap:8px;margin-top:14px;}
+  .quill-input input{flex:1;background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:10px 12px;
+    color:var(--text);font-size:13px;outline:none;}
+  .quill-input input:focus{border-color:var(--cyan-dim);}
+  .quill-input button{background:linear-gradient(160deg,var(--cyan),var(--cyan-dim));border:none;border-radius:8px;
+    padding:0 16px;color:#062a26;font-weight:700;font-size:13px;cursor:pointer;}
+
+  .badge-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+  .badge{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 8px;text-align:center;}
+  .badge.locked{opacity:0.35;}
+  .badge .medal{width:44px;height:44px;margin:0 auto 6px;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, var(--gold-hi), var(--gold) 60%, #7a5c17 100%);
+    display:flex;align-items:center;justify-content:center;font-size:19px;box-shadow:0 0 14px rgba(205,163,51,0.35);}
+  .badge.locked .medal{background:#222833;box-shadow:none;}
+  .badge .name{font-size:10.5px;font-weight:600;color:var(--text);}
+  .badge .tag{font-size:9px;color:var(--gold-hi);margin-top:2px;}
+
+  .coin-bar{display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-bottom:12px;color:var(--gold-hi);font-weight:700;font-size:14px;}
+  .store-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .store-item{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;}
+  .store-preview{height:56px;border-radius:8px;margin-bottom:8px;display:flex;align-items:center;justify-content:center;font-size:24px;
+    background:linear-gradient(160deg,#1c222c,#12161c);}
+  .store-item .iname{font-size:12px;font-weight:600;}
+  .store-item .idesc{font-size:10px;color:var(--text-dim);margin:2px 0 8px;}
+  .store-btn{width:100%;padding:7px 0;border-radius:7px;border:none;font-size:11.5px;font-weight:700;cursor:pointer;}
+  .store-btn.buy{background:linear-gradient(160deg,var(--gold),#a67f21);color:#241c08;}
+  .store-btn.owned{background:var(--panel-2);color:var(--text-dim);cursor:default;}
+  .store-btn.equipped{background:linear-gradient(160deg,var(--cyan),var(--cyan-dim));color:#062a26;}
+
+  .navbar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:460px;
+    background:rgba(15,18,23,0.95);backdrop-filter:blur(10px);border-top:1px solid var(--line);display:flex;z-index:30;}
+  .nav-btn{flex:1;padding:11px 0 9px;text-align:center;cursor:pointer;color:var(--text-dim);}
+  .nav-btn .icon{font-size:18px;display:block;}
+  .nav-btn .lbl{font-size:9.5px;margin-top:2px;display:block;}
+  .nav-btn.active{color:var(--cyan);}
+
+  .ai-fab{position:fixed;bottom:96px;left:calc(50% + 165px);width:50px;height:50px;border-radius:50%;
+    background:linear-gradient(160deg,var(--cyan),var(--cyan-dim));display:flex;align-items:center;justify-content:center;
+    font-size:21px;box-shadow:0 4px 18px rgba(73,211,192,0.4);cursor:pointer;z-index:40;border:2px solid rgba(255,255,255,0.15);}
+  @media (max-width:460px){ .ai-fab{ left:auto; right:16px; } }
+  .ai-panel{position:fixed;bottom:0;left:50%;transform:translateX(-50%) translateY(100%);width:100%;max-width:460px;
+    background:var(--panel);border-top:1px solid var(--line);border-radius:16px 16px 0 0;z-index:50;
+    transition:transform .35s cubic-bezier(.2,.9,.2,1);max-height:70vh;display:flex;flex-direction:column;}
+  .ai-panel.open{transform:translateX(-50%) translateY(0);}
+  .ai-head{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;}
+  .ai-head .t{font-family:'Spectral',serif;font-weight:600;font-size:15px;color:var(--gold-hi);}
+  .ai-close{color:var(--text-dim);cursor:pointer;font-size:18px;}
+  .ai-msgs{padding:14px 16px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:10px;}
+  .ai-msg{max-width:80%;padding:9px 12px;border-radius:12px;font-size:12.5px;line-height:1.4;word-wrap:break-word;}
+  .ai-msg.bot{background:var(--panel-2);align-self:flex-start;border:1px solid var(--line);}
+  .ai-msg.user{background:linear-gradient(160deg,var(--cyan-dim),#134943);align-self:flex-end;color:#dffaf5;}
+  .ai-input-row{display:flex;gap:8px;padding:12px 16px 16px;border-top:1px solid var(--line);}
+  .ai-input-row input{flex:1;background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:9px 12px;
+    color:var(--text);font-size:13px;outline:none;}
+  .ai-input-row button{background:linear-gradient(160deg,var(--gold),#a67f21);border:none;border-radius:8px;padding:0 14px;
+    color:#241c08;font-weight:700;cursor:pointer;}
+
+  .toast{position:fixed;top:14px;left:50%;transform:translateX(-50%) translateY(-140%);
+    background:linear-gradient(160deg,#1c222c,#12161c);border:1px solid var(--gold);border-radius:12px;padding:12px 18px;
+    z-index:60;display:flex;align-items:center;gap:10px;box-shadow:0 8px 30px rgba(205,163,51,0.35);
+    transition:transform .5s cubic-bezier(.2,.9,.2,1);max-width:400px;width:88%;}
+  .toast.show{transform:translateX(-50%) translateY(0);}
+  .toast.err{border-color:var(--danger);}
+  .toast .em{font-size:24px;}
+  .toast .tt{font-family:'Spectral',serif;font-weight:700;font-size:14px;color:var(--gold-hi);}
+  .toast.err .tt{color:var(--danger);}
+  .toast .ts{font-size:10.5px;color:var(--text-dim);}
+
+  .boot{min-height:100vh;display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-size:13px;}
+</style>
+</head>
+<body>
+
+<div id="bootScreen" class="boot">Loading STAT&hellip;</div>
+
+<!-- AUTH -->
+<div id="authScreen" style="display:none;">
+  <div class="auth-mark">STAT</div>
+  <div class="auth-tag">your habits, gamified</div>
+  <div class="auth-card">
+
+    <!-- Login / Signup -->
+    <div id="loginSignupView">
+      <div class="auth-tabs">
+        <div class="auth-tab active" data-mode="login">Log In</div>
+        <div class="auth-tab" data-mode="signup">Sign Up</div>
+      </div>
+      <form id="authForm" autocomplete="on">
+        <div class="field-row" id="usernameRow">
+          <label class="field-label">Display name</label>
+          <input type="text" id="usernameInput" maxlength="20" placeholder="Wanderer_07" autocomplete="nickname">
+        </div>
+        <label class="field-label">Email</label>
+        <input type="email" id="emailInput" required placeholder="you@example.com" autocomplete="email">
+        <label class="field-label">Password</label>
+        <input type="password" id="passwordInput" required minlength="6" placeholder="At least 6 characters" autocomplete="current-password">
+        <div class="auth-links" id="forgotLinkRow"><span class="auth-link" id="forgotLinkBtn">Forgot password?</span></div>
+        <button type="submit" class="auth-submit" id="authSubmitBtn">Log In</button>
+        <div class="auth-loading" id="authLoading">Working on it&hellip;</div>
+        <div class="auth-msg" id="authMsg"></div>
+      </form>
+    </div>
+
+    <!-- Forgot password: request reset link -->
+    <div id="forgotView" style="display:none;">
+      <div class="auth-view-title">Reset your password</div>
+      <div class="auth-view-sub">We'll email you a link to set a new one.</div>
+      <label class="field-label">Email</label>
+      <input type="email" id="forgotEmailInput" required placeholder="you@example.com" autocomplete="email">
+      <button type="button" class="auth-submit" id="forgotSubmitBtn">Send reset link</button>
+      <div class="auth-loading" id="forgotLoading">Sending&hellip;</div>
+      <div class="auth-msg" id="forgotMsg"></div>
+      <div class="auth-links" style="margin-top:14px;"><span class="auth-link" id="backToLoginBtn">&larr; Back to log in</span></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none;">
+
+  <div class="hud">
+    <div class="avatar-ring" id="avatarRing">
+      <svg viewBox="0 0 52 52">
+        <circle cx="26" cy="26" r="22" fill="none" stroke="#222833" stroke-width="4"/>
+        <circle id="lvlRing" cx="26" cy="26" r="22" fill="none" stroke="url(#gradRing)" stroke-width="4" stroke-linecap="round" stroke-dasharray="138" stroke-dashoffset="138"/>
+        <defs><linearGradient id="gradRing" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#f0cf6b"/><stop offset="100%" stop-color="#cda333"/>
+        </linearGradient></defs>
+      </svg>
+      <div class="core" id="lvlCore">1</div>
+    </div>
+    <div class="hud-mid">
+      <div class="hud-name"><span class="uname" id="hudUsername">Wanderer</span><span class="hud-tag" id="titleTag">Novice</span></div>
+      <div class="xp-track"><div class="xp-fill" id="xpFill" style="width:0%"></div></div>
+      <div class="xp-label"><span id="xpLabel">0 / 100 XP</span></div>
+    </div>
+    <div class="streak"><div class="flame">🔥</div><div class="num" id="streakNum">0</div><div class="cap">STREAK</div></div>
+    <button class="logout-btn" id="logoutBtn">Log out</button>
+  </div>
+
+  <div class="screen active" id="screen-dash">
+    <div class="section-title">Your Stat Sheet <span class="sub">live</span></div>
+    <div class="wheel-card">
+      <div class="wheel-wrap">
+        <svg viewBox="0 0 150 150" id="skillWheel"></svg>
+        <div class="wheel-center"><div class="big" id="wheelTotal">0</div><div class="lbl">AVG SKILL</div></div>
+      </div>
+      <div class="legend" id="skillLegend"></div>
+    </div>
+    <div class="improve-card" id="improveCard"></div>
+    <div class="section-title" style="margin-bottom:2px;">This Week <span class="sub">auto-logged</span></div>
+    <div class="streak-strip" id="weekStrip"></div>
+  </div>
+
+  <div class="screen" id="screen-book">
+    <div class="section-title">The Ledger <span class="sub">write it, then live it</span></div>
+    <div class="book-scene">
+      <div class="book-tabs">
+        <div class="book-tab active" data-range="day">Today</div>
+        <div class="book-tab" data-range="week">This Week</div>
+      </div>
+      <div class="page">
+        <div class="page-title" id="pageTitle">Today's entries</div>
+        <div id="taskList"></div>
+      </div>
+      <div class="quill-input">
+        <input type="text" id="taskInput" maxlength="60" placeholder="Write a task, then press the quill...">
+        <button id="addTaskBtn">&#9997;&#65039;</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen" id="screen-ach">
+    <div class="section-title">Achievements <span class="sub">earned & sealed</span></div>
+    <div class="badge-grid" id="badgeGrid"></div>
+  </div>
+
+  <div class="screen" id="screen-store">
+    <div class="section-title">The Vault <span class="sub">spend your gold</span></div>
+    <div class="coin-bar">&#129689; <span id="coinCount">0</span></div>
+    <div class="store-grid" id="storeGrid"></div>
+  </div>
+
+</div>
+
+<div class="navbar" id="navbar" style="display:none;">
+  <div class="nav-btn active" data-screen="dash"><span class="icon">&#128202;</span><span class="lbl">Stat</span></div>
+  <div class="nav-btn" data-screen="book"><span class="icon">&#128214;</span><span class="lbl">Ledger</span></div>
+  <div class="nav-btn" data-screen="ach"><span class="icon">&#127941;</span><span class="lbl">Honors</span></div>
+  <div class="nav-btn" data-screen="store"><span class="icon">&#129689;</span><span class="lbl">Vault</span></div>
+</div>
+
+<div class="ai-fab" id="aiFab" style="display:none;">&#10022;</div>
+<div class="ai-panel" id="aiPanel">
+  <div class="ai-head"><div class="t">Warden</div><div class="ai-close" id="aiClose">&#10005;</div></div>
+  <div class="ai-msgs" id="aiMsgs"></div>
+  <div class="ai-input-row">
+    <input type="text" id="aiInput" maxlength="200" placeholder="Tell me what you're working on...">
+    <button id="aiSend">Send</button>
+  </div>
+</div>
+
+<div class="toast" id="toast">
+  <div class="em" id="toastEm">&#11088;</div>
+  <div><div class="tt" id="toastTitle">Level up!</div><div class="ts" id="toastSub">You reached Level 2</div></div>
+</div>
+
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+// ---------------- SUPABASE ----------------
+const SUPABASE_URL = 'https://deoyueyyjefdyllnogfs.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_jStnIHH4XUxHXmhmHiC90A_8brzbZBI';
+
+// In-memory session store: keeps auth working inside sandboxed preview
+// frames that block localStorage. If you host this yourself, you can
+// switch this back to the default (just remove the `storage` line and
+// supabase-js will use localStorage automatically, which survives page reloads).
+const memoryStore = new Map();
+const memoryStorage = {
+  getItem: (k) => (memoryStore.has(k) ? memoryStore.get(k) : null),
+  setItem: (k, v) => memoryStore.set(k, v),
+  removeItem: (k) => memoryStore.delete(k),
+};
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: { storage: memoryStorage, persistSession: true, autoRefreshToken: true }
+});
+
+// ---------------- CONSTANTS ----------------
+const TITLES = ['Novice','Initiate','Apprentice','Adept','Journeyman','Expert','Veteran','Master','Elder','Legend'];
+const MAX_LEVEL = 10;
+
+const DEFAULT_SKILLS = [
+  {name:'Discipline', val:20, color:'#49d3c0'},
+  {name:'Focus',      val:20, color:'#cda333'},
+  {name:'Health',     val:20, color:'#e2703a'},
+  {name:'Mind',       val:20, color:'#8a7ff0'},
+  {name:'Craft',      val:20, color:'#e05b8f'},
+];
+const DEFAULT_TASKS_DAY = [
+  {t:'Drink 2L water', xp:10, done:false},
+  {t:'Read 10 pages', xp:15, done:false},
+];
+const DEFAULT_TASKS_WEEK = [
+  {t:'3 workouts this week', xp:50, done:false},
+];
+const DEFAULT_ACHIEVEMENTS = [
+  {key:'first_blood', name:'First Blood', tag:'Bronze', icon:'\u{1FA78}'},
+  {key:'flame_7', name:'7-Day Flame', tag:'Silver', icon:'\u{1F525}'},
+  {key:'early_riser', name:'Early Riser', tag:'Silver', icon:'\u{1F305}'},
+  {key:'iron_focus', name:'Iron Focus', tag:'Gold', icon:'\u{1F3AF}'},
+  {key:'bookworm', name:'Bookworm', tag:'Gold', icon:'\u{1F4DA}'},
+  {key:'flame_30', name:'30-Day Flame', tag:'Platinum', icon:'\u{1F525}'},
+];
+const DEFAULT_STORE = [
+  {key:'frame_ember', name:'Ember Frame', desc:'Fire-rimmed ID ring', price:80, icon:'\u{1F525}', owned:false, equipped:false, group:'frame'},
+  {key:'frame_aether', name:'Aether Frame', desc:'Cyan pulse ring', price:120, icon:'\u{2726}', owned:false, equipped:false, group:'frame'},
+  {key:'title_gold', name:'Gilded Title', desc:'Gold name plate', price:150, icon:'\u{1F3F7}\u{FE0F}', owned:false, equipped:false, group:'title'},
+  {key:'fx_rune', name:'Rune Trail', desc:'Task-complete FX', price:60, icon:'\u{2728}', owned:false, equipped:false, group:'fx'},
+];
+
+function escapeHTML(str){
+  return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function isoDate(d){ return d.toISOString().slice(0,10); }
+function todayISO(){ return isoDate(new Date()); }
+
+// ---------------- STATE ----------------
+let user = null;
+let state = null; // profile data, mirrors DB row
+let saveTimer = null;
+let currentRange = 'day';
+
+// ---------------- BOOT ----------------
+async function boot(){
+  const { data: { session } } = await supabase.auth.getSession();
+  document.getElementById('bootScreen').style.display = 'none';
+  if (session && session.user){
+    await enterApp(session.user);
+  } else {
+    document.getElementById('authScreen').style.display = 'flex';
+    showLoginSignupView();
+  }
+}
+
+supabase.auth.onAuthStateChange((event, session) => {
+  if (event === 'SIGNED_OUT'){
+    user = null; state = null;
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('navbar').style.display = 'none';
+    document.getElementById('aiFab').style.display = 'none';
+    document.getElementById('authScreen').style.display = 'flex';
+    showLoginSignupView();
+    setAuthMode('login');
+  }
+});
+
+async function enterApp(u){
+  user = u;
+  document.getElementById('bootScreen').style.display = 'none';
+  document.getElementById('authScreen').style.display = 'none';
+  try{
+    state = await loadOrCreateProfile(u);
+  }catch(err){
+    document.getElementById('authScreen').style.display = 'flex';
+    showLoginSignupView();
+    showAuthMsg('Could not load your data: ' + err.message, 'err');
+    return;
+  }
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('navbar').style.display = 'flex';
+  document.getElementById('aiFab').style.display = 'flex';
+  renderAll();
+  seedAIGreeting();
+}
+
+// ---------------- PROFILE (SUPABASE) ----------------
+async function loadOrCreateProfile(u){
+  const { data, error } = await supabase.from('profiles').select('*').eq('id', u.id).maybeSingle();
+  if (error) throw error;
+  if (data) return normalizeProfile(data);
+
+  const seeded = {
+    id: u.id,
+    username: (u.user_metadata && u.user_metadata.username) || (u.email ? u.email.split('@')[0] : 'Wanderer'),
+    level: 1, xp: 0, xp_to_next: 100, coins: 50, streak: 0, total_completed: 0,
+    skills: DEFAULT_SKILLS, tasks_day: DEFAULT_TASKS_DAY, tasks_week: DEFAULT_TASKS_WEEK,
+    achievements: DEFAULT_ACHIEVEMENTS.map(a => ({...a, unlocked:false})),
+    store_items: DEFAULT_STORE, active_dates: [],
+  };
+  const { data: inserted, error: insErr } = await supabase.from('profiles').insert(seeded).select().single();
+  if (insErr) throw insErr;
+  return normalizeProfile(inserted);
+}
+
+function normalizeProfile(row){
+  return {
+    username: row.username || 'Wanderer',
+    level: row.level ?? 1,
+    xp: row.xp ?? 0,
+    xpToNext: row.xp_to_next ?? 100,
+    coins: row.coins ?? 50,
+    streak: row.streak ?? 0,
+    totalCompleted: row.total_completed ?? 0,
+    skills: (row.skills && row.skills.length) ? row.skills : DEFAULT_SKILLS,
+    tasksDay: row.tasks_day || [],
+    tasksWeek: row.tasks_week || [],
+    achievements: (row.achievements && row.achievements.length) ? row.achievements : DEFAULT_ACHIEVEMENTS.map(a=>({...a,unlocked:false})),
+    storeItems: (row.store_items && row.store_items.length) ? row.store_items : DEFAULT_STORE,
+    activeDates: row.active_dates || [],
+  };
+}
+
+function scheduleSave(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveProfile, 450);
+}
+async function saveProfile(){
+  if (!user || !state) return;
+  const payload = {
+    username: state.username, level: state.level, xp: state.xp, xp_to_next: state.xpToNext,
+    coins: state.coins, streak: state.streak, total_completed: state.totalCompleted,
+    skills: state.skills, tasks_day: state.tasksDay, tasks_week: state.tasksWeek,
+    achievements: state.achievements, store_items: state.storeItems, active_dates: state.activeDates,
+    updated_at: new Date().toISOString(),
+  };
+  const { error } = await supabase.from('profiles').update(payload).eq('id', user.id);
+  if (error) showToast('\u{26A0}\u{FE0F}', 'Sync failed', error.message, true);
+}
+
+// ---------------- RENDER ----------------
+function renderAll(){
+  renderHUD(); renderWheel(); renderImprove(); renderWeek(); renderTasks(); renderBadges(); renderStore();
+}
+
+function renderHUD(){
+  document.getElementById('hudUsername').textContent = state.username;
+  document.getElementById('lvlCore').textContent = state.level;
+  document.getElementById('titleTag').textContent = TITLES[state.level-1] || 'Legend';
+  const pct = state.level >= MAX_LEVEL ? 100 : Math.min(100, (state.xp/state.xpToNext)*100);
+  document.getElementById('xpFill').style.width = pct+'%';
+  document.getElementById('xpLabel').textContent = state.level >= MAX_LEVEL ? 'MAX LEVEL' : `${state.xp} / ${state.xpToNext} XP`;
+  document.getElementById('streakNum').textContent = state.streak;
+  document.getElementById('coinCount').textContent = state.coins;
+  const ring = document.getElementById('lvlRing');
+  const circumference = 138;
+  ring.style.strokeDashoffset = circumference - (pct/100)*circumference;
+
+  const avatarRing = document.getElementById('avatarRing');
+  avatarRing.className = 'avatar-ring';
+  const emberEquipped = state.storeItems.find(i => i.key==='frame_ember' && i.equipped);
+  const aetherEquipped = state.storeItems.find(i => i.key==='frame_aether' && i.equipped);
+  if (emberEquipped) avatarRing.classList.add('frame-ember');
+  if (aetherEquipped) avatarRing.classList.add('frame-aether');
+}
+
+function renderWheel(){
+  const svg = document.getElementById('skillWheel');
+  svg.innerHTML = '';
+  const cx=75, cy=75, r=58, thickness=16;
+  const total = state.skills.reduce((a,s)=>a+s.val,0) || 1;
+  let offsetAngle = 0;
+  const circumference = 2*Math.PI*r;
+  const gapDeg = 3;
+
+  state.skills.forEach((s,i)=>{
+    const frac = s.val/total;
+    const segDeg = Math.max(0, frac*360 - gapDeg);
+    const segLen = (segDeg/360)*circumference;
+    const gapLen = circumference - segLen;
+    const circle = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    circle.setAttribute('cx',cx); circle.setAttribute('cy',cy); circle.setAttribute('r',r);
+    circle.setAttribute('fill','none');
+    circle.setAttribute('stroke', s.color);
+    circle.setAttribute('stroke-width', thickness);
+    circle.setAttribute('stroke-linecap','round');
+    circle.setAttribute('stroke-dasharray', `0 ${circumference}`);
+    circle.setAttribute('transform', `rotate(${offsetAngle} ${cx} ${cy})`);
+    circle.style.transition = 'stroke-dasharray 1s cubic-bezier(.2,.9,.2,1)';
+    circle.style.filter = `drop-shadow(0 0 3px ${s.color}88)`;
+    svg.appendChild(circle);
+    setTimeout(()=>{ circle.setAttribute('stroke-dasharray', `${segLen} ${gapLen}`); }, 60*i);
+    offsetAngle += frac*360;
+  });
+
+  document.getElementById('wheelTotal').textContent = Math.round(total/state.skills.length);
+  document.getElementById('skillLegend').innerHTML = state.skills.map(s=>`
+    <div class="legend-item">
+      <div class="legend-dot" style="background:${s.color}"></div>
+      <div class="lname">${escapeHTML(s.name)}</div>
+      <div class="lval">${s.val}</div>
+    </div>`).join('');
+}
+
+function renderImprove(){
+  const done = state.totalCompleted;
+  const rows = [
+    {ic:'\u{1F4C8}', txt:'Tasks completed all-time', delta:`${done}`},
+    {ic:'\u{1F525}', txt:'Current streak vs your best habit is holding', delta:`${state.streak}d`},
+    {ic:'\u{1F3AF}', txt:'Average stat across all skills', delta:`${Math.round(state.skills.reduce((a,s)=>a+s.val,0)/state.skills.length)}`},
+    {ic:'\u{1F9E0}', txt:'Level progress toward next rank', delta: state.level>=MAX_LEVEL ? 'MAX' : `${Math.round((state.xp/state.xpToNext)*100)}%`},
+  ];
+  document.getElementById('improveCard').innerHTML = rows.map(r=>`
+    <div class="improve-row"><div class="ic">${r.ic}</div><div class="txt">${r.txt}</div><div class="delta">${r.delta}</div></div>
+  `).join('');
+}
+
+function renderWeek(){
+  const days = [];
+  for(let i=6;i>=0;i--){
+    const d = new Date(); d.setDate(d.getDate()-i);
+    days.push({ str: isoDate(d), label: d.toLocaleDateString(undefined,{weekday:'narrow'}), isToday: i===0 });
+  }
+  document.getElementById('weekStrip').innerHTML = days.map(d=>
+    `<div class="day-chip ${state.activeDates.includes(d.str)?'done':''} ${d.isToday?'today':''}">${d.label}</div>`
+  ).join('');
+}
+
+function renderTasks(){
+  const list = currentRange==='day' ? state.tasksDay : state.tasksWeek;
+  document.getElementById('pageTitle').textContent = currentRange==='day' ? "Today's entries" : "This week's entries";
+  const el = document.getElementById('taskList');
+  if (!list.length){
+    el.innerHTML = `<div class="empty-page">The page is blank. Write your first task below.</div>`;
+    return;
+  }
+  el.innerHTML = list.map((task,i)=>`
+    <div class="task-line">
+      <div class="task-check ${task.done?'checked':''}" data-i="${i}">${task.done?'&#10003;':''}</div>
+      <div class="task-text ${task.done?'checked':''}">${escapeHTML(task.t)}</div>
+      <div class="task-xp">+${task.xp}xp</div>
+      <div class="task-del" data-del="${i}">&#10005;</div>
+    </div>`).join('');
+  el.querySelectorAll('.task-check').forEach(chk=>{
+    chk.addEventListener('click', ()=> toggleTask(+chk.dataset.i));
+  });
+  el.querySelectorAll('.task-del').forEach(x=>{
+    x.addEventListener('click', ()=> deleteTask(+x.dataset.del));
+  });
+}
+
+function renderBadges(){
+  document.getElementById('badgeGrid').innerHTML = state.achievements.map(a=>`
+    <div class="badge ${a.unlocked?'':'locked'}">
+      <div class="medal">${a.icon}</div>
+      <div class="name">${escapeHTML(a.name)}</div>
+      <div class="tag">${a.unlocked ? a.tag : 'Locked'}</div>
+    </div>`).join('');
+}
+
+function renderStore(){
+  document.getElementById('storeGrid').innerHTML = state.storeItems.map((it,i)=>`
+    <div class="store-item">
+      <div class="store-preview">${it.icon}</div>
+      <div class="iname">${escapeHTML(it.name)}</div>
+      <div class="idesc">${escapeHTML(it.desc)}</div>
+      <button class="store-btn ${it.owned ? (it.equipped?'equipped':'owned') : 'buy'}" data-i="${i}">
+        ${it.owned ? (it.equipped ? 'Equipped' : 'Equip') : `Buy \u2014 \u{1FA99}${it.price}`}
+      </button>
+    </div>`).join('');
+  document.querySelectorAll('.store-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=> buyOrEquip(+btn.dataset.i));
+  });
+}
+
+// ---------------- ACTIONS ----------------
+function toggleTask(i){
+  const list = currentRange==='day' ? state.tasksDay : state.tasksWeek;
+  const task = list[i];
+  const wasDone = task.done;
+  task.done = !task.done;
+
+  if (!wasDone && task.done){
+    gainXP(task.xp);
+    state.coins += Math.max(1, Math.round(task.xp/2));
+    state.totalCompleted += 1;
+    bumpRandomSkill();
+    logActiveDay();
+    checkAchievements();
+  } else if (wasDone && !task.done){
+    state.totalCompleted = Math.max(0, state.totalCompleted-1);
+  }
+  renderAll();
+  scheduleSave();
+}
+
+function deleteTask(i){
+  const list = currentRange==='day' ? state.tasksDay : state.tasksWeek;
+  list.splice(i,1);
+  renderTasks();
+  scheduleSave();
+}
+
+function addTask(){
+  const input = document.getElementById('taskInput');
+  const val = input.value.trim();
+  if (!val) return;
+  const list = currentRange==='day' ? state.tasksDay : state.tasksWeek;
+  list.push({ t: val, xp: currentRange==='day' ? 10 : 30, done: false });
+  input.value = '';
+  renderTasks();
+  scheduleSave();
+}
+
+function bumpRandomSkill(){
+  const s = state.skills[Math.floor(Math.random()*state.skills.length)];
+  s.val = Math.min(99, s.val + 2);
+}
+
+function logActiveDay(){
+  const today = todayISO();
+  if (!state.activeDates.includes(today)){
+    state.activeDates = [...state.activeDates, today].slice(-60);
+  }
+  state.streak = computeStreak(state.activeDates);
+  if (new Date().getHours() < 8){
+    const a = state.achievements.find(a=>a.key==='early_riser');
+    if (a && !a.unlocked){ a.unlocked = true; showToast('\u{1F305}','Achievement unlocked', a.name); }
+  }
+}
+
+function computeStreak(dates){
+  const set = new Set(dates);
+  let count = 0;
+  let cursor = new Date();
+  if (!set.has(isoDate(cursor))) cursor.setDate(cursor.getDate()-1);
+  while (set.has(isoDate(cursor))){
+    count++;
+    cursor.setDate(cursor.getDate()-1);
+  }
+  return count;
+}
+
+function gainXP(amount){
+  if (state.level >= MAX_LEVEL){ return; }
+  state.xp += amount;
+  let leveledTo = null;
+  while (state.xp >= state.xpToNext && state.level < MAX_LEVEL){
+    state.xp -= state.xpToNext;
+    state.level += 1;
+    state.xpToNext = Math.round(state.xpToNext*1.25);
+    state.coins += 25;
+    leveledTo = state.level;
+  }
+  if (state.level >= MAX_LEVEL){ state.xp = 0; }
+  if (leveledTo){
+    showToast('\u2B50','Level up!', `You reached Level ${leveledTo} \u2014 ${TITLES[leveledTo-1]}`);
+  }
+}
+
+function checkAchievements(){
+  const has = k => state.achievements.find(a=>a.key===k);
+  const unlock = (k) => { const a = has(k); if (a && !a.unlocked){ a.unlocked = true; showToast(a.icon, 'Achievement unlocked', a.name); } };
+  if (state.totalCompleted >= 1) unlock('first_blood');
+  if (state.totalCompleted >= 20) unlock('iron_focus');
+  if (state.streak >= 7) unlock('flame_7');
+  if (state.streak >= 30) unlock('flame_30');
+  const weekDone = state.tasksWeek.filter(t=>t.done).length;
+  if (weekDone >= 5) unlock('bookworm');
+}
+
+function buyOrEquip(i){
+  const item = state.storeItems[i];
+  if (!item.owned){
+    if (state.coins >= item.price){
+      state.coins -= item.price;
+      item.owned = true;
+      renderHUD(); renderStore();
+      scheduleSave();
+    } else {
+      showToast('\u{1FA99}','Not enough gold', `You need ${item.price - state.coins} more`);
+    }
+    return;
+  }
+  if (!item.equipped){
+    state.storeItems.filter(o=>o.group===item.group).forEach(o=>o.equipped=false);
+    item.equipped = true;
+    renderHUD(); renderStore();
+    scheduleSave();
+  }
+}
+
+function showToast(emoji,title,sub,isErr){
+  const toast = document.getElementById('toast');
+  toast.classList.toggle('err', !!isErr);
+  document.getElementById('toastEm').textContent = emoji;
+  document.getElementById('toastTitle').textContent = title;
+  document.getElementById('toastSub').textContent = sub;
+  toast.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(()=>toast.classList.remove('show'), 2800);
+}
+
+// ---------------- AI PANEL (real model via Supabase Edge Function) ----------------
+let aiHistory = []; // {role:'user'|'assistant', content:string}[]
+
+function seedAIGreeting(){
+  const msgs = document.getElementById('aiMsgs');
+  const pending = state.tasksDay.filter(t=>!t.done).length;
+  msgs.innerHTML = '';
+  aiHistory = [];
+  const greeting = pending > 0
+    ? `You've got ${pending} task${pending>1?'s':''} still open today. Want a hand breaking one down?`
+    : `Today's ledger is clear. Nice work \u2014 want me to suggest something for tomorrow?`;
+  msgs.insertAdjacentHTML('beforeend', `<div class="ai-msg bot">${escapeHTML(greeting)}</div>`);
+}
+
+function addTypingIndicator(){
+  const msgs = document.getElementById('aiMsgs');
+  msgs.insertAdjacentHTML('beforeend', `<div class="ai-msg bot" id="typingIndicator">&hellip;</div>`);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+function removeTypingIndicator(){
+  const el = document.getElementById('typingIndicator');
+  if (el) el.remove();
+}
+
+async function sendAI(){
+  const input = document.getElementById('aiInput');
+  const val = input.value.trim();
+  if (!val) return;
+  const msgs = document.getElementById('aiMsgs');
+  msgs.insertAdjacentHTML('beforeend', `<div class="ai-msg user">${escapeHTML(val)}</div>`);
+  input.value = '';
+  msgs.scrollTop = msgs.scrollHeight;
+  addTypingIndicator();
+
+  const context = {
+    level: state.level, streak: state.streak,
+    pendingToday: state.tasksDay.filter(t=>!t.done).map(t=>t.t),
+    pendingWeek: state.tasksWeek.filter(t=>!t.done).map(t=>t.t),
+  };
+
+  try{
+    const { data, error } = await supabase.functions.invoke('chat-ai', {
+      body: { message: val, history: aiHistory, context }
+    });
+    removeTypingIndicator();
+    if (error) throw error;
+    const reply = (data && data.reply) || "Sorry, I couldn't think of a reply just now.";
+    msgs.insertAdjacentHTML('beforeend', `<div class="ai-msg bot">${escapeHTML(reply)}</div>`);
+    aiHistory.push({ role: 'user', content: val }, { role: 'assistant', content: reply });
+    aiHistory = aiHistory.slice(-10);
+  }catch(err){
+    removeTypingIndicator();
+    msgs.insertAdjacentHTML('beforeend', `<div class="ai-msg bot">Couldn't reach the Warden right now \u2014 try again in a moment.</div>`);
+  }
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+// ---------------- AUTH UI ----------------
+let authMode = 'login';
+function setAuthMode(mode){
+  authMode = mode;
+  document.querySelectorAll('.auth-tab').forEach(t=>t.classList.toggle('active', t.dataset.mode===mode));
+  document.getElementById('usernameRow').classList.toggle('show', mode==='signup');
+  document.getElementById('passwordInput').autocomplete = mode==='signup' ? 'new-password' : 'current-password';
+  document.getElementById('authSubmitBtn').textContent = mode==='signup' ? 'Create Account' : 'Log In';
+  document.getElementById('forgotLinkRow').style.display = mode==='signup' ? 'none' : 'flex';
+  hideAuthMsg();
+}
+function showAuthMsg(msg, kind){
+  const el = document.getElementById('authMsg');
+  el.textContent = msg;
+  el.className = 'auth-msg ' + (kind||'err');
+}
+function hideAuthMsg(){
+  const el = document.getElementById('authMsg');
+  el.className = 'auth-msg';
+}
+
+// Top-level auth view switching: login/signup vs forgot-password
+function showLoginSignupView(){
+  document.getElementById('loginSignupView').style.display = 'block';
+  document.getElementById('forgotView').style.display = 'none';
+}
+function showForgotView(){
+  document.getElementById('loginSignupView').style.display = 'none';
+  document.getElementById('forgotView').style.display = 'block';
+  document.getElementById('forgotMsg').className = 'auth-msg';
+  const currentEmail = document.getElementById('emailInput').value.trim();
+  if (currentEmail) document.getElementById('forgotEmailInput').value = currentEmail;
+}
+
+document.querySelectorAll('.auth-tab').forEach(tab=>{
+  tab.addEventListener('click', ()=> setAuthMode(tab.dataset.mode));
+});
+document.getElementById('forgotLinkBtn').addEventListener('click', showForgotView);
+document.getElementById('backToLoginBtn').addEventListener('click', ()=>{ showLoginSignupView(); setAuthMode('login'); });
+
+document.getElementById('authForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  hideAuthMsg();
+  const email = document.getElementById('emailInput').value.trim();
+  const password = document.getElementById('passwordInput').value;
+  const username = document.getElementById('usernameInput').value.trim();
+  const btn = document.getElementById('authSubmitBtn');
+  btn.disabled = true;
+  document.getElementById('authLoading').style.display = 'block';
+  try{
+    if (authMode === 'signup'){
+      const { data, error } = await supabase.auth.signUp({
+        email, password, options: { data: { username: username || email.split('@')[0] } }
+      });
+      if (error) throw error;
+      if (data.session && data.user){
+        await enterApp(data.user);
+      } else {
+        showAuthMsg('Account created. Check your email to confirm, then log in.', 'ok');
+        setAuthMode('login');
+      }
+    } else {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      await enterApp(data.user);
+    }
+  }catch(err){
+    showAuthMsg(err.message || 'Something went wrong.', 'err');
+  }finally{
+    btn.disabled = false;
+    document.getElementById('authLoading').style.display = 'none';
+  }
+});
+
+// ---- Forgot password: send reset email ----
+document.getElementById('forgotSubmitBtn').addEventListener('click', async ()=>{
+  const email = document.getElementById('forgotEmailInput').value.trim();
+  const msgEl = document.getElementById('forgotMsg');
+  msgEl.className = 'auth-msg';
+  if (!email){
+    msgEl.textContent = 'Enter your email first.'; msgEl.classList.add('err'); msgEl.style.display='block';
+    return;
+  }
+  const btn = document.getElementById('forgotSubmitBtn');
+  btn.disabled = true;
+  document.getElementById('forgotLoading').style.display = 'block';
+  try{
+    // Points the emailed link at the dedicated reset-password.html page
+    // (must sit next to this file wherever you host it).
+    const redirectTo = window.location.origin + window.location.pathname.replace(/[^/]*$/, '') + 'reset-password.html';
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+    if (error) throw error;
+    msgEl.textContent = 'Check your email for a reset link.'; msgEl.classList.add('ok'); msgEl.style.display='block';
+  }catch(err){
+    msgEl.textContent = err.message || 'Could not send the reset email.'; msgEl.classList.add('err'); msgEl.style.display='block';
+  }finally{
+    btn.disabled = false;
+    document.getElementById('forgotLoading').style.display = 'none';
+  }
+});
+
+document.getElementById('logoutBtn').addEventListener('click', async ()=>{
+  await supabase.auth.signOut();
+});
+
+// ---------------- NAV / BOOK / AI WIRING ----------------
+document.querySelectorAll('.nav-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    document.getElementById('screen-'+btn.dataset.screen).classList.add('active');
+  });
+});
+document.querySelectorAll('.book-tab').forEach(tab=>{
+  tab.addEventListener('click', ()=>{
+    document.querySelectorAll('.book-tab').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    currentRange = tab.dataset.range;
+    renderTasks();
+  });
+});
+document.getElementById('addTaskBtn').addEventListener('click', addTask);
+document.getElementById('taskInput').addEventListener('keydown', e=>{ if(e.key==='Enter') addTask(); });
+
+const aiFab = document.getElementById('aiFab');
+const aiPanel = document.getElementById('aiPanel');
+aiFab.addEventListener('click', ()=> aiPanel.classList.add('open'));
+document.getElementById('aiClose').addEventListener('click', ()=> aiPanel.classList.remove('open'));
+document.getElementById('aiSend').addEventListener('click', sendAI);
+document.getElementById('aiInput').addEventListener('keydown', e=>{ if(e.key==='Enter') sendAI(); });
+
+boot();
+</script>
+</body>
+</html>
